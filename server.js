@@ -1,6 +1,5 @@
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
-const mongoose = require("mongoose");
 const express = require('express');
 const cors = require('cors');
 const passport = require('passport');
@@ -26,7 +25,7 @@ app.use(session({
         collectionName: "sessions",
     }),
     cookie: {
-        secure: false, // Set to true in production with HTTPS
+        secure: process.env.ENV === 'developpement' ? false : true, // Set to true in production with HTTPS
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days session expiration
     }
