@@ -38,7 +38,7 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/auth/callback",
+    callbackURL: `${process.env.API_URL}/auth/callback`,
     scope: ['https://www.googleapis.com/auth/youtube.readonly']
 }, (accessToken, refreshToken, profile, done) => {
     return done(null, { profile, accessToken });
