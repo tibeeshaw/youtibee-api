@@ -27,8 +27,8 @@ app.use(session({
     cookie: {
         secure: process.env.ENV === 'developpement' ? false : true, // Set to true in production with HTTPS
         httpOnly: true,
-        sameSite: "none", // Allow cross-origin cookies
-        domain: ".tibeechaw.com", // Set this if you have a custom domain
+        // sameSite: false, // Allow cross-origin cookies
+        // domain: ".tibeechaw.com", // Set this if you have a custom domain
         maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days session expiration
     }
 }));
@@ -57,7 +57,7 @@ app.get('/auth/callback', passport.authenticate('google', { failureRedirect: '/'
 });
 
 app.get('/logout', (req, res) => {
-    req.logout(() => res.redirect('/'));
+    req.logout(() => res.redirect(process.env.APP_URL));
 });
 
 app.get('/dashboard', (req, res) => {
@@ -77,27 +77,6 @@ app.get("/me", (req, res) => {
 app.use(express.json());
 
 const API_KEY = process.env.YOUTUBE_API_KEY;
-const channels = {}
-
-app.get('/my-channel', async (req, res) => {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    try {
-        const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
-            headers: { Authorization: `Bearer ${req.user.accessToken}` }
-        });
-
-        const data = await response.json();
-        if (data.items && data.items.length > 0) {
-            const channelId = data.items[0].id;
-            channels[req.user.id] = channelId;
-            res.json({ channelId });
-        } else {
-            res.status(404).json({ error: 'Channel not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch channel ID' });
-    }
-});
 
 app.get("/liked-videos", async (req, res) => {
     if (!req.user || !req.user.accessToken) {
