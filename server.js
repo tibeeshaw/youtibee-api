@@ -54,14 +54,24 @@ const authenticateJWT = async (req, res, next) => {
 
 ffmpeg.setFfmpegPath(ffmpegStatic);
 
-app.get("/download/audio", async (req, res) => {
+app.get("/download/audio", authenticateJWT, async (req, res) => {
     const videoId = req.query.id; // YouTube video URL from frontend
     if (!videoId) return res.status(400).json({ error: "No video ID provided" });
 
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     try {
-        const info = await ytdl.getInfo(videoUrl);
+        const info = await ytdl.getInfo(videoUrl, {
+            requestOptions: {
+                headers:
+                    { Authorization: `Bearer ${req.user.accessToken}` }
+                // Optional. If not given, ytdl-core will try to find it.
+                // You can find this by going to a video's watch page, viewing the source,
+                // and searching for "ID_TOKEN".
+                // 'x-youtube-identity-token': 1324,
+                ,
+            }
+        });
         const title = info.videoDetails.title.replace(/[^a-zA-Z0-9]/g, "_"); // Safe filename
 
         const outputPath = path.resolve(__dirname, `downloads/${title}.mp3`);
