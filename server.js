@@ -19,7 +19,7 @@ app.use(
 const cookieConf = {
     secure: process.env.ENV === 'developpement' ? false : true, // Set to true in production with HTTPS
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     domain: "youtube.tibeechaw.com", // Set this if you have a custom domain
     maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days session expiration
 }
