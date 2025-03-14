@@ -16,6 +16,16 @@ app.use(
     })
 );
 
+const cookieConf = {
+    secure: process.env.ENV === 'developpement' ? false : true, // Set to true in production with HTTPS
+    httpOnly: true,
+    sameSite: "lax",
+    // domain: "youtube.tibeechaw.com", // Set this if you have a custom domain
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days session expiration
+}
+
+console.log('cookieConf', cookieConf);
+
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -24,13 +34,7 @@ app.use(session({
         mongoUrl: process.env.MONGO_URI,
         collectionName: "sessions",
     }),
-    cookie: {
-        secure: process.env.ENV === 'developpement' ? false : true, // Set to true in production with HTTPS
-        httpOnly: true,
-        sameSite: "lax",
-        // domain: "youtube.tibeechaw.com", // Set this if you have a custom domain
-        maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days session expiration
-    }
+    cookie: cookieConf
 }));
 
 app.use(passport.initialize());
