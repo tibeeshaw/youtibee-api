@@ -48,8 +48,8 @@ router.get("/download/audio", async (req, res) => {
             format: "bestaudio",
             extractAudio: true,
             audioFormat: "mp3",
-            cookies: COOKIES_PATH,
-            proxy: PROXY,
+            cookies,
+            proxy,
             output: outputPath,
         });
 
