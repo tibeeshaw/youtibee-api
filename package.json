@@ -22,7 +22,6 @@
     "https-proxy-agent": "^7.0.6",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^3.3.2",
-    "yt-dlp-exec": "^1.0.2",
     "ytdl-core": "npm:@distube/ytdl-core@^4.16.4"
   },
   "devDependencies": {

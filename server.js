@@ -67,7 +67,6 @@ function getRandomProxy() {
 const proxy = getRandomProxy();
 const cookies = process.env.YOUTUBE_COOKIES.replace(/;/g, "\n"); // Convert back to multiline
 
-
 app.get("/download/audio", async (req, res) => {
     const videoId = req.query.id; // YouTube video URL from frontend
     if (!videoId) return res.status(400).json({ error: "No video ID provided" });
@@ -93,8 +92,6 @@ app.get("/download/audio", async (req, res) => {
 
         const title = info.videoDetails.title.replace(/[^a-zA-Z0-9]/g, "_"); // Safe filename
 
-        const outputPath = path.resolve(__dirname, `downloads/${title}.mp3`);
-
         const audioStream = ytdl(videoUrl, { quality: "highestaudio", requestOptions: {
             headers: {
                 Cookie: cookies, // Attach the cookies
@@ -102,15 +99,47 @@ app.get("/download/audio", async (req, res) => {
             }
         } });
 
-        ffmpeg(audioStream)
-            .audioCodec("libmp3lame")
-            .toFormat("mp3")
-            .save(outputPath)
-            .on("end", () => {
-                res.download(outputPath, `${title}.mp3`, () => {
-                    fs.unlinkSync(outputPath); // Delete after download
-                });
+        const filePath = path.resolve(__dirname, `downloads/${title}.mp3`);
+        const writeStream = fs.createWriteStream(filePath);
+
+        audioStream.pipe(writeStream);
+
+        writeStream.on("finish", () => {
+            console.log("Audio file saved successfully.");
+            res.download(filePath, `${title}.mp3`, (err) => {
+                if (err) {
+                    console.error("Error during download:", err);
+                }
+                // Clean up after download
+                fs.unlinkSync(filePath);
             });
+        });
+
+        writeStream.on("error", (err) => {
+            console.error("Error writing file:", err);
+            res.status(500).json({ error: "Failed to save audio file" });
+        });
+
+
+        // // Process audio stream with FFmpeg and save as MP3
+        // ffmpeg(audioStream)
+        //     .audioCodec("libmp3lame")
+        //     .toFormat("mp3")
+        //     .save(outputPath)
+        //     .on("end", () => {
+        //         console.log("Audio conversion complete, starting download...");
+        //         res.download(outputPath, `${title}.mp3`, (err) => {
+        //             if (err) {
+        //                 console.error("Error during download:", err);
+        //             }
+        //             // Clean up after download
+        //             fs.unlinkSync(outputPath); // Delete the temporary audio file
+        //         });
+        //     })
+        //     .on("error", (err) => {
+        //         console.error("FFmpeg error:", err);
+        //         res.status(500).json({ error: "Failed to process audio" });
+        //     });
     } catch (error) {
         console.error("Download error:", error);
         res.status(500).json({ error: "Failed to download video" });
