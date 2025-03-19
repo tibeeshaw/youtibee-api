@@ -1,9 +1,4 @@
 const express = require("express");
-const ytdl = require("ytdl-core");
-const ffmpeg = require("fluent-ffmpeg");
-const ffmpegStatic = require("ffmpeg-static"); // Import ffmpeg-static
-const path = require("path");
-const fs = require("fs");
 const cors = require('cors');
 const dotenv = require('dotenv');
 
@@ -53,108 +48,6 @@ const authenticateJWT = async (req, res, next) => {
         return res.status(500).json({ message: "Error verifying token", error });
     }
 };
-
-ffmpeg.setFfmpegPath(ffmpegStatic);
-
-const proxies = [
-    "http://13.38.153.36:80",
-    "http://13.37.89.201:80",
-    "http://13.38.176.104:80",
-];
-
-function getRandomProxy() {
-    return proxies[Math.floor(Math.random() * proxies.length)];
-}
-
-const proxy = getRandomProxy();
-
-const cookiesBase64 = process.env.YOUTUBE_COOKIES // Convert back to multiline
-const cookies = JSON.parse(Buffer.from(cookiesBase64, 'base64').toString('utf-8'));
-
-// const agent = ytdl.createProxyAgent({ uri: proxy }, cookies);
-const agent = ytdl.createAgent(cookies);
-
-
-app.get("/download/audio", async (req, res) => {
-    const videoId = req.query.id; // YouTube video URL from frontend
-    if (!videoId) return res.status(400).json({ error: "No video ID provided" });
-
-    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-    console.log('videoUrl', videoUrl);
-
-    try {
-        const info = await ytdl.getInfo(videoUrl, {
-            agent
-,
-            requestOptions: {
-                headers:
-                    { "User-Agent": "Mozilla/5.0", },
-                // Optional. If not given, ytdl-core will try to find it.
-                // You can find this by going to a video's watch page, viewing the source,
-                // and searching for "ID_TOKEN".
-                // 'x-youtube-identity-token': 1324,
-                // Cookie: cookies,
-}
-        });
-
-        console.log('info', info);
-
-        const title = info.videoDetails.title.replace(/[^a-zA-Z0-9]/g, "_"); // Safe filename
-
-        const audioStream = ytdl(videoUrl, { quality: "highestaudio", agent, requestOptions: {
-            headers: {
-                // Cookie: cookies, // Attach the cookies
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", // Mimic a real browser
-            }
-        } });
-
-        const filePath = path.resolve(__dirname, `downloads/${title}.mp3`);
-        const writeStream = fs.createWriteStream(filePath);
-
-        audioStream.pipe(writeStream);
-
-        writeStream.on("finish", () => {
-            console.log("Audio file saved successfully.");
-            res.download(filePath, `${title}.mp3`, (err) => {
-                if (err) {
-                    console.error("Error during download:", err);
-                }
-                // Clean up after download
-                fs.unlinkSync(filePath);
-            });
-        });
-
-        writeStream.on("error", (err) => {
-            console.error("Error writing file:", err);
-            res.status(500).json({ error: "Failed to save audio file" });
-        });
-
-
-        // // Process audio stream with FFmpeg and save as MP3
-        // ffmpeg(audioStream)
-        //     .audioCodec("libmp3lame")
-        //     .toFormat("mp3")
-        //     .save(outputPath)
-        //     .on("end", () => {
-        //         console.log("Audio conversion complete, starting download...");
-        //         res.download(outputPath, `${title}.mp3`, (err) => {
-        //             if (err) {
-        //                 console.error("Error during download:", err);
-        //             }
-        //             // Clean up after download
-        //             fs.unlinkSync(outputPath); // Delete the temporary audio file
-        //         });
-        //     })
-        //     .on("error", (err) => {
-        //         console.error("FFmpeg error:", err);
-        //         res.status(500).json({ error: "Failed to process audio" });
-        //     });
-    } catch (error) {
-        console.error("Download error:", error);
-        res.status(500).json({ error: "Failed to download video" });
-    }
-});
 
 
 app.get("/liked-videos", authenticateJWT, async (req, res) => {
