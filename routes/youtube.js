@@ -3,6 +3,7 @@ const ytdl = require("ytdl-core");
 const ffmpeg = require("fluent-ffmpeg");
 const path = require("path");
 const fs = require("fs");
+const cookies = process.env.YOUTUBE_COOKIES.replace(/;/g, "\n"); // Convert back to multiline
 
 const router = express.Router();
 
@@ -16,7 +17,15 @@ router.get("/download/audio", async (req, res) => {
 
         const outputPath = path.resolve(__dirname, `../../downloads/${title}.mp3`);
 
-        const audioStream = ytdl(videoUrl, { quality: "highestaudio" });
+        const audioStream = ytdl(videoUrl, { 
+            quality: "highestaudio", 
+            requestOptions: {
+                headers: {
+                    Cookie: cookies, // Attach the cookies
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", // Mimic a real browser
+                }
+            }
+        });
 
         ffmpeg(audioStream)
             .audioCodec("libmp3lame")
