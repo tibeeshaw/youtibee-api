@@ -38,6 +38,8 @@ const authenticateJWT = async (req, res, next) => {
             return res.status(403).json({ message: "Invalid token", error: data.error });
         }
 
+        console.log(token);
+
         req.user = {
             id: data.sub,
             email: data.email,
@@ -65,7 +67,13 @@ function getRandomProxy() {
 }
 
 const proxy = getRandomProxy();
-const cookies = process.env.YOUTUBE_COOKIES.replace(/;/g, "\n"); // Convert back to multiline
+
+const cookiesBase64 = process.env.YOUTUBE_COOKIES // Convert back to multiline
+const cookies = JSON.parse(Buffer.from(cookiesBase64, 'base64').toString('utf-8'));
+
+// const agent = ytdl.createProxyAgent({ uri: proxy }, cookies);
+const agent = ytdl.createAgent(cookies);
+
 
 app.get("/download/audio", async (req, res) => {
     const videoId = req.query.id; // YouTube video URL from frontend
@@ -77,6 +85,8 @@ app.get("/download/audio", async (req, res) => {
 
     try {
         const info = await ytdl.getInfo(videoUrl, {
+            agent
+,
             requestOptions: {
                 headers:
                     { "User-Agent": "Mozilla/5.0", },
@@ -84,7 +94,7 @@ app.get("/download/audio", async (req, res) => {
                 // You can find this by going to a video's watch page, viewing the source,
                 // and searching for "ID_TOKEN".
                 // 'x-youtube-identity-token': 1324,
-                Cookie: cookies,
+                // Cookie: cookies,
 }
         });
 
@@ -92,9 +102,9 @@ app.get("/download/audio", async (req, res) => {
 
         const title = info.videoDetails.title.replace(/[^a-zA-Z0-9]/g, "_"); // Safe filename
 
-        const audioStream = ytdl(videoUrl, { quality: "highestaudio", requestOptions: {
+        const audioStream = ytdl(videoUrl, { quality: "highestaudio", agent, requestOptions: {
             headers: {
-                Cookie: cookies, // Attach the cookies
+                // Cookie: cookies, // Attach the cookies
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", // Mimic a real browser
             }
         } });
