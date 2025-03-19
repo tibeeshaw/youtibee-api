@@ -5,7 +5,7 @@ const ffmpeg = require("fluent-ffmpeg");
 const path = require("path");
 const fs = require("fs");
 const cookies = process.env.YOUTUBE_COOKIES.replace(/;/g, "\n"); // Convert back to multiline
-// const proxyUrl = process.env.PROXY; // Replace with your proxy
+// const proxy = process.env.PROXY; // Replace with your proxy
 
 const proxies = [
     "http://13.38.153.36:80",
@@ -17,51 +17,54 @@ function getRandomProxy() {
     return proxies[Math.floor(Math.random() * proxies.length)];
 }
 
-const proxyUrl = getRandomProxy();
-
+const proxy = getRandomProxy();
 
 const router = express.Router();
 
+async function getVideoInfo(videoUrl) {
+    try {
+        const info = await ytdlp.exec(videoUrl, {
+            dumpJson: true,
+            cookies,  // Uses cookies for authentication
+            proxy,           // Uses a proxy to bypass rate limits
+        });
+        return JSON.parse(info);
+    } catch (error) {
+        throw new Error(`Error fetching video info: ${error}`);
+    }
+}
+
 router.get("/download/audio", async (req, res) => {
-    const videoUrl = req.query.url; // YouTube video URL from frontend
+    const videoUrl = req.query.url;
     if (!videoUrl) return res.status(400).json({ error: "No video URL provided" });
 
     try {
-        const info = await ytdl.getInfo(videoUrl);
-        const title = info.videoDetails.title.replace(/[^a-zA-Z0-9]/g, "_"); // Safe filename
-
+        const info = await getVideoInfo(videoUrl);
+        const title = info.title.replace(/[^a-zA-Z0-9]/g, "_"); // Safe filename
         const outputPath = path.resolve(__dirname, `../../downloads/${title}.mp3`);
 
-        // const audioStream = ytdl(videoUrl, { 
-        //     quality: "highestaudio", 
-        //     requestOptions: {
-        //         headers: {
-        //             Cookie: cookies, // Attach the cookies
-        //             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", // Mimic a real browser
-        //         }
-        //     }
-        // });
+        // Run yt-dlp to download audio
+        const downloadProcess = ytdlp.exec(videoUrl, {
+            format: "bestaudio",
+            extractAudio: true,
+            audioFormat: "mp3",
+            cookies: COOKIES_PATH,
+            proxy: PROXY,
+            output: outputPath,
+        });
 
-        const audioStream = ytdlp.exec([
-            videoUrl,
-            "-f", "bestaudio",
-            "--cookies", cookies, // Use cookies to prevent rate limits
-            "--proxy", proxyUrl, // Set proxy for yt-dlp
-            "--no-playlist"
-        ]);
-
-        ffmpeg(audioStream)
-            .audioCodec("libmp3lame")
-            .toFormat("mp3")
-            .save(outputPath)
-            .on("end", () => {
-                res.download(outputPath, `${title}.mp3`, () => {
-                    fs.unlinkSync(outputPath); // Delete after download
-                });
+        downloadProcess.then(() => {
+            res.download(outputPath, `${title}.mp3`, () => {
+                fs.unlinkSync(outputPath); // Delete file after download
             });
+        }).catch((error) => {
+            console.error("Download error:", error);
+            res.status(500).json({ error: "Failed to download video" });
+        });
+
     } catch (error) {
-        console.error("Download error:", error);
-        res.status(500).json({ error: "Failed to download video" });
+        console.error("Error:", error);
+        res.status(500).json({ error: "Failed to retrieve video info" });
     }
 });
 
