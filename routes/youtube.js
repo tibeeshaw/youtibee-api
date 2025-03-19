@@ -5,7 +5,20 @@ const ffmpeg = require("fluent-ffmpeg");
 const path = require("path");
 const fs = require("fs");
 const cookies = process.env.YOUTUBE_COOKIES.replace(/;/g, "\n"); // Convert back to multiline
-const proxyUrl = process.env.PROXY; // Replace with your proxy
+// const proxyUrl = process.env.PROXY; // Replace with your proxy
+
+const proxies = [
+    "http://13.38.153.36:80",
+    "http://13.37.89.201:80",
+    "http://13.38.176.104:80",
+];
+
+function getRandomProxy() {
+    return proxies[Math.floor(Math.random() * proxies.length)];
+}
+
+const proxyUrl = getRandomProxy();
+
 
 const router = express.Router();
 
@@ -33,6 +46,7 @@ router.get("/download/audio", async (req, res) => {
             videoUrl,
             "-f", "bestaudio",
             "--cookies", cookies, // Use cookies to prevent rate limits
+            "--proxy", proxyUrl, // Set proxy for yt-dlp
             "--no-playlist"
         ]);
 
