@@ -57,6 +57,7 @@ app.get("/liked-videos", authenticateJWT, async (req, res) => {
         });
 
         const data = await response.json();
+        console.log('liked', data, req.user.accessToken);
         res.json(data.items || []);
     } catch (error) {
         console.error(error);
@@ -71,6 +72,7 @@ app.get("/playlists", authenticateJWT, async (req, res) => {
         });
 
         const data = await response.json();
+        console.log('playlists', data);
         res.json(data.items || []);
     } catch (error) {
         console.error(error);
