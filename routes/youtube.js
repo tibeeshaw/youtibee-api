@@ -1,9 +1,8 @@
 const express = require("express");
 // const ytdl = require("ytdl-core");
 const ytdlp = require("yt-dlp-exec");
-const ffmpeg = require("fluent-ffmpeg");
+// const ffmpeg = require("fluent-ffmpeg");
 const path = require("path");
-const fs = require("fs");
 const cookies = process.env.YOUTUBE_COOKIES.replace(/;/g, "\n"); // Convert back to multiline
 // const proxy = process.env.PROXY; // Replace with your proxy
 
@@ -19,7 +18,6 @@ function getRandomProxy() {
 
 const proxy = getRandomProxy();
 
-const router = express.Router();
 
 async function getVideoInfo(videoUrl) {
     try {
@@ -33,6 +31,8 @@ async function getVideoInfo(videoUrl) {
         throw new Error(`Error fetching video info: ${error}`);
     }
 }
+
+const router = express.Router();
 
 router.get("/download/audio", async (req, res) => {
     const videoUrl = req.query.url;
